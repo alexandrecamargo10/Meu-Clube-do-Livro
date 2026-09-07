@@ -105,34 +105,27 @@ export const BookCard: React.FC<BookCardProps> = ({
                 height="903"
                 className="absolute inset-0 w-[448px] h-[903px] pointer-events-none z-10 overflow-visible"
               >
-                {/* Aba interna traseira da capa dura (Back Cover Lip) */}
+                {/* 1. Face interna vertical da contracapa traseira (borda cinza suave que envolve o miolo) */}
                 <polygon
-                  points="0,15 108,0 108,12 48,25"
-                  fill="#172554"
-                  stroke="#0f172a"
-                  strokeWidth="2"
+                  points="106,4 108,0 446,84 106,23"
+                  fill="#d4d4d8"
+                  stroke="#a1a1aa"
+                  strokeWidth="1"
                 />
-                <line x1="0" y1="15" x2="108" y2="0" stroke="#3b82f6" strokeWidth="2.5" opacity="0.9" />
+                {/* Linha de destaque da borda superior da contracapa traseira */}
+                <line x1="106" y1="4" x2="446" y2="84" stroke="#ffffff" strokeWidth="2" />
 
-                {/* Topo do Miolo: Bloco de páginas cortadas (Folhas Brancas / Miolo idêntico à referência) */}
+                {/* 2. Face horizontal superior das páginas (Miolo branco cortado preenchendo a perspectiva exata) */}
                 <polygon
-                  points="48,25 108,0 446,84 326,103"
-                  fill="#f8fafc"
-                  stroke="#cbd5e1"
-                  strokeWidth="2"
+                  points="3,14 50,26 80,26 106,23 446,84 326,105 3,15"
+                  fill="#ffffff"
+                  stroke="#e4e4e7"
+                  strokeWidth="1"
                 />
 
-                {/* Linhas de corte das páginas do miolo e sombreamento de profundidade */}
-                <line x1="108" y1="0" x2="446" y2="84" stroke="#94a3b8" strokeWidth="2.5" opacity="0.7" />
-                <line x1="48" y1="25" x2="326" y2="103" stroke="#cbd5e1" strokeWidth="2.5" opacity="0.8" />
-                <line x1="68" y1="17" x2="366" y2="90" stroke="#e2e8f0" strokeWidth="1.5" />
-                <line x1="88" y1="8" x2="406" y2="87" stroke="#e2e8f0" strokeWidth="1.5" />
-
-                {/* Sombra sutil de recesso das páginas sob a capa frontal */}
-                <polygon
-                  points="48,25 60,28 326,104 326,103"
-                  fill="rgba(0,0,0,0.15)"
-                />
+                {/* Linhas de corte das páginas do miolo e vinco traseiro */}
+                <line x1="106" y1="23" x2="446" y2="84" stroke="#d4d4d8" strokeWidth="1.5" />
+                <line x1="108" y1="42" x2="416" y2="90" stroke="#f4f4f5" strokeWidth="1" />
               </svg>
 
               {/* Face da Lombada Direita com Perspectiva e Nome ao Longo da Lombada */}
