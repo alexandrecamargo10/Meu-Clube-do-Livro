@@ -5,10 +5,14 @@ import { Plus, BookOpen, Layers, Sparkles, Lock } from 'lucide-react';
 import { VirtualShelf } from '@/components/shelf/VirtualShelf';
 import { ShelfData, BookItem, Role } from '@/types';
 import { BookModal } from '@/components/shelf/BookModal';
+import { AddBookSearchModal } from '@/components/shelf/AddBookSearchModal';
+import { useNotification } from '@/components/ui/NotificationProvider';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ShelvesPage() {
-  // Simulação do Nível de Assinatura (FREE, PLUS, MASTER)
-  const [userRole, setUserRole] = useState<Role>('FREE');
+  const { toast, prompt } = useNotification();
+  const { user } = useAuth();
+  const userRole = user?.role || 'FREE';
 
   // Estado das Estantes do Usuário
   const [shelves, setShelves] = useState<ShelfData[]>([
@@ -88,16 +92,37 @@ export default function ShelvesPage() {
   const [activeShelfId, setActiveShelfId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Estado do Pop-up de busca rápida para adicionar livro em uma estante específica
+  const [searchModalState, setSearchModalState] = useState<{
+    isOpen: boolean;
+    shelfId: string;
+    shelfName: string;
+  }>({
+    isOpen: false,
+    shelfId: '',
+    shelfName: '',
+  });
+
   // Validação de Limite de Estantes para o Plano Free (Máximo 2 estantes)
   const isFreeMaxShelvesReached = userRole === 'FREE' && shelves.length >= 2;
 
-  const handleCreateShelf = () => {
+  const handleCreateShelf = async () => {
     if (isFreeMaxShelvesReached) {
-      alert('Limite do Plano FREE atingido (máximo de 2 estantes). Assine o Leitor Plus ou Master para criar estantes ilimitadas!');
+      toast(
+        'Limite do Plano FREE atingido!',
+        'Você já possui 2 estantes virtuais. Assine o Leitor Plus ou Master para ter estantes ilimitadas.',
+        'warning'
+      );
       return;
     }
 
-    const newShelfName = prompt('Digite o nome da nova estante:');
+    const newShelfName = await prompt({
+      title: 'Criar Nova Estante Virtual',
+      description: 'Dê um nome para organizar seus livros, mangás ou quadrinhos.',
+      placeholder: 'Ex: Ficção Científica Favorita, Mangás de Ação...',
+      confirmLabel: 'Criar Estante',
+    });
+
     if (!newShelfName) return;
 
     const newShelf: ShelfData = {
@@ -111,6 +136,40 @@ export default function ShelvesPage() {
     };
 
     setShelves([...shelves, newShelf]);
+    toast('Estante criada com sucesso!', `A estante "${newShelfName}" foi adicionada.`, 'success');
+  };
+
+  const handleOpenAddBookModal = (shelf: ShelfData) => {
+    if (userRole === 'FREE' && shelf.books.length >= 30) {
+      toast(
+        'Limite de 30 livros atingido!',
+        'O Plano FREE suporta até 30 obras por estante. Assine o Leitor Plus para livros ilimitados!',
+        'warning'
+      );
+      return;
+    }
+
+    setSearchModalState({
+      isOpen: true,
+      shelfId: shelf.id,
+      shelfName: shelf.name,
+    });
+  };
+
+  const handleAddBookToShelf = (newBook: BookItem) => {
+    setShelves((prevShelves) =>
+      prevShelves.map((shelf) => {
+        if (shelf.id === searchModalState.shelfId) {
+          const alreadyExists = shelf.books.some((b) => b.id === newBook.id || b.title === newBook.title);
+          if (alreadyExists) return shelf;
+          return {
+            ...shelf,
+            books: [...shelf.books, newBook],
+          };
+        }
+        return shelf;
+      })
+    );
   };
 
   const handleSaveBook = (updatedBook: BookItem) => {
@@ -134,7 +193,7 @@ export default function ShelvesPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       
-      {/* Header com Seletor de Role para Demonstração de Aprendizado */}
+      {/* Header com Informações da Conta e Botão de Nova Estante */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
           <h1 className="text-3xl font-black text-white">Minhas Estantes Virtuais</h1>
@@ -144,24 +203,6 @@ export default function ShelvesPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Seletor de Simulação de Plano */}
-          <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1.5 rounded-xl text-xs">
-            <span className="text-[11px] text-slate-400 font-medium px-2">Simular Plano:</span>
-            {(['FREE', 'PLUS', 'MASTER'] as Role[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setUserRole(r)}
-                className={`px-3 py-1 rounded-lg font-bold transition ${
-                  userRole === r
-                    ? 'bg-amber-500 text-slate-950 shadow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-
           {/* Botão Nova Estante */}
           <button
             onClick={handleCreateShelf}
@@ -178,7 +219,7 @@ export default function ShelvesPage() {
         </div>
       </div>
 
-      {/* Lista de Estantes Virtuais */}
+      {/* Lista de Estantes Virtuais com o botão "Adicionar Obra" que abre o popup de busca */}
       <div className="space-y-12">
         {shelves.map((shelf) => (
           <VirtualShelf
@@ -190,6 +231,7 @@ export default function ShelvesPage() {
               setActiveShelfId(shelf.id);
               setIsModalOpen(true);
             }}
+            onAddBookClick={() => handleOpenAddBookModal(shelf)}
             onThemeChange={(newTheme) => {
               setShelves((prev) =>
                 prev.map((s) => (s.id === shelf.id ? { ...s, theme: newTheme } : s))
@@ -199,13 +241,21 @@ export default function ShelvesPage() {
         ))}
       </div>
 
-      {/* Modal de Interação com o Livro */}
+      {/* Modal de Detalhes / Atualização de Leitura */}
       <BookModal
         book={selectedBook}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveBook}
         onRemove={handleRemoveBook}
+      />
+
+      {/* Pop-up de Busca e Inclusão Direta na Estante Selecionada */}
+      <AddBookSearchModal
+        isOpen={searchModalState.isOpen}
+        onClose={() => setSearchModalState((prev) => ({ ...prev, isOpen: false }))}
+        shelfName={searchModalState.shelfName}
+        onBookSelected={handleAddBookToShelf}
       />
     </div>
   );

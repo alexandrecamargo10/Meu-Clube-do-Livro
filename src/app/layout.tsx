@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { NotificationProvider } from '@/components/ui/NotificationProvider';
+import { AuthProvider } from '@/context/AuthContext';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 export const metadata: Metadata = {
   title: 'Meu Clube do Livro | Rede Social de Leitores & Estantes 3D',
@@ -16,9 +19,14 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body className="flex min-h-screen flex-col bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <NotificationProvider>
+          <AuthProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <AuthModal />
+          </AuthProvider>
+        </NotificationProvider>
       </body>
     </html>
   );

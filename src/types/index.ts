@@ -2,6 +2,8 @@ export type Role = 'FREE' | 'PLUS' | 'MASTER';
 export type ShelfTheme = 'WOOD' | 'DARK' | 'NEON' | 'VINTAGE';
 export type BookType = 'BOOK' | 'MANGA' | 'COMIC';
 export type ReadingStatus = 'WANT_TO_READ' | 'READING' | 'READ' | 'ABANDONED';
+export type MemberRole = 'MEMBER' | 'MODERATOR' | 'MASTER';
+export type BookViewMode = 'MOCKUP_3D' | 'FRONT_COVER';
 
 export interface BookItem {
   id: string;
@@ -32,6 +34,29 @@ export interface ShelfData {
   createdAt: string;
 }
 
+export interface ClubChatMessage {
+  id: string;
+  clubId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userRole: Role;
+  content: string;
+  createdAt: string;
+}
+
+export interface ClubMemberItem {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userAvatar?: string;
+  userRole: Role;
+  memberRole: MemberRole;
+  joinedAt: string;
+  status: 'ACTIVE' | 'INVITED';
+}
+
 export interface ClubData {
   id: string;
   name: string;
@@ -43,6 +68,9 @@ export interface ClubData {
   currentBook?: BookItem;
   readingDeadline?: string;
   createdAt: string;
+  shelf?: ShelfData;
+  members?: ClubMemberItem[];
+  messages?: ClubChatMessage[];
 }
 
 export interface UserProfile {
@@ -52,6 +80,7 @@ export interface UserProfile {
   avatarUrl?: string;
   role: Role;
   bio?: string;
+  createdAt?: string;
 }
 
 export interface BookSearchResult {

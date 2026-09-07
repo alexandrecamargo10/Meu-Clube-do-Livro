@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Search, Filter, Plus, Check, Loader2, BookOpen, Star, Sparkles } from 'lucide-react';
+import { Search, Filter, Plus, Check, Loader2, BookOpen, Star, Sparkles, Layers } from 'lucide-react';
 import { searchBooksMultiApi } from '@/lib/services/books';
-import { BookSearchResult, BookType } from '@/types';
+import { BookSearchResult, BookType, ShelfData } from '@/types';
 import { BookModal } from '@/components/shelf/BookModal';
+import { SelectShelfModal } from '@/components/shelf/SelectShelfModal';
+import { useNotification } from '@/components/ui/NotificationProvider';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('Duna');
@@ -14,8 +16,42 @@ export default function SearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [addedBookIds, setAddedBookIds] = useState<string[]>([]);
 
+  // Estantes disponíveis do usuário para escolha
+  const [userShelves] = useState<ShelfData[]>([
+    {
+      id: 'shelf_1',
+      name: '📖 Lendo Atualmente',
+      theme: 'WOOD',
+      isPublic: true,
+      books: [],
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'shelf_2',
+      name: '🏆 Favoritos inesquecíveis',
+      theme: 'VINTAGE',
+      isPublic: true,
+      books: [],
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'shelf_3',
+      name: '🎯 Quero Ler em Breve',
+      theme: 'DARK',
+      isPublic: true,
+      books: [],
+      createdAt: new Date().toISOString(),
+    },
+  ]);
+
   const [selectedBook, setSelectedBook] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Modal para perguntar em qual estante adicionar o livro
+  const [pendingBookForShelf, setPendingBookForShelf] = useState<BookSearchResult | null>(null);
+  const [isSelectShelfOpen, setIsSelectShelfOpen] = useState(false);
+
+  const { toast } = useNotification();
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -36,9 +72,20 @@ export default function SearchPage() {
     handleSearch();
   }, [typeFilter]);
 
-  const handleAddToShelf = (book: BookSearchResult | any) => {
+  // Ao clicar em "Adicionar", pergunta em qual estante deseja salvar
+  const handleInitiateAdd = (book: BookSearchResult) => {
+    setPendingBookForShelf(book);
+    setIsSelectShelfOpen(true);
+  };
+
+  const handleConfirmAddToShelf = (shelfId: string, book: BookSearchResult) => {
+    const targetShelf = userShelves.find((s) => s.id === shelfId);
     setAddedBookIds((prev) => [...prev, book.id]);
-    alert(`"${book.title}" foi adicionado com sucesso à sua Estante Principal!`);
+    toast(
+      'Adicionado à Estante!',
+      `"${book.title}" foi guardado com sucesso na estante "${targetShelf?.name || 'sua estante'}".`,
+      'success'
+    );
   };
 
   return (
@@ -52,7 +99,7 @@ export default function SearchPage() {
         </div>
         <h1 className="text-3xl font-black text-white">Explorar Obras</h1>
         <p className="text-xs text-slate-400">
-          Pesquise no maior acervo unificado de livros, mangás e histórias em quadrinhos do mundo.
+          Pesquise no acervo unificado e selecione em qual das suas estantes virtuais deseja adicionar.
         </p>
       </div>
 
@@ -145,8 +192,7 @@ export default function SearchPage() {
                 </div>
 
                 <button
-                  onClick={() => handleAddToShelf(item)}
-                  disabled={isAdded}
+                  onClick={() => handleInitiateAdd(item)}
                   className={`mt-4 w-full py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition ${
                     isAdded
                       ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
@@ -160,8 +206,8 @@ export default function SearchPage() {
                     </>
                   ) : (
                     <>
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Adicionar</span>
+                      <Layers className="h-3.5 w-3.5" />
+                      <span>Escolher Estante</span>
                     </>
                   )}
                 </button>
@@ -175,14 +221,23 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Modal para Visualização/Adição */}
+      {/* Modal para Visualização/Anotações */}
       <BookModal
         book={selectedBook}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={(updated) => {
-          handleAddToShelf(updated);
+          handleInitiateAdd(updated);
         }}
+      />
+
+      {/* Modal de Escolha da Estante */}
+      <SelectShelfModal
+        isOpen={isSelectShelfOpen}
+        onClose={() => setIsSelectShelfOpen(false)}
+        shelves={userShelves}
+        book={pendingBookForShelf}
+        onSelectShelf={handleConfirmAddToShelf}
       />
     </div>
   );

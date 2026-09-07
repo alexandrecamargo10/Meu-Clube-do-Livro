@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { SubscriptionPlan, Role } from '@/types';
 import { Crown, Sparkles, HelpCircle } from 'lucide-react';
+import { useNotification } from '@/components/ui/NotificationProvider';
 
 export default function PricingPage() {
+  const { toast } = useNotification();
   const [currentRole, setCurrentRole] = useState<Role>('FREE');
 
   const plans: SubscriptionPlan[] = [
@@ -74,7 +76,11 @@ export default function PricingPage() {
 
   const handleSelectPlan = (planId: string) => {
     setCurrentRole(planId as Role);
-    alert(`Parabéns! Você alterou seu plano para ${planId}. Na versão final, este botão redirecionará para o Stripe Checkout.`);
+    toast(
+      'Plano Selecionado!',
+      `Você alternou com sucesso para o plano ${planId}. Na versão final, este botão redirecionará para o Stripe Checkout.`,
+      'success'
+    );
   };
 
   return (

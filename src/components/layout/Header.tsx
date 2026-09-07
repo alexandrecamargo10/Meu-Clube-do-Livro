@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { BookOpen, Search, Users, Crown, Sparkles, User as UserIcon } from 'lucide-react';
+import Image from 'next/image';
+import { BookOpen, Search, Users, Crown, Sparkles, User as UserIcon, LogOut, LogIn } from 'lucide-react';
 import { Role } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/components/ui/NotificationProvider';
 
 export const Header: React.FC = () => {
-  // Simulação de usuário com perfil (Pode ser alterado para demonstrar os Planos FREE, PLUS ou MASTER)
-  const [userRole, setUserRole] = useState<Role>('FREE');
+  const { user, isAuthenticated, logout, updateRole, openAuthModal } = useAuth();
+  const { toast } = useNotification();
 
   const getBadgeStyle = (role: Role) => {
     switch (role) {
@@ -18,6 +21,15 @@ export const Header: React.FC = () => {
       default:
         return 'bg-slate-800 text-slate-300 border border-slate-700';
     }
+  };
+
+  const handleRoleChange = (newRole: Role) => {
+    updateRole(newRole);
+    toast(
+      'Plano Simulado!',
+      `Seu usuário agora opera com as permissões do nível ${newRole}.`,
+      'info'
+    );
   };
 
   return (
@@ -76,38 +88,65 @@ export const Header: React.FC = () => {
           </nav>
         </div>
 
-        {/* User Role Simulator & Profile */}
+        {/* Auth & User Controls */}
         <div className="flex items-center gap-3">
-          {/* Alternador de Plano (Demo de Aprendizado para o Usuário) */}
-          <div className="hidden sm:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1 rounded-lg text-xs">
-            <span className="text-[11px] text-slate-400 pl-2 font-medium">Plano Simulação:</span>
-            {(['FREE', 'PLUS', 'MASTER'] as Role[]).map((role) => (
-              <button
-                key={role}
-                onClick={() => setUserRole(role)}
-                className={`px-2.5 py-1 rounded-md transition font-semibold ${
-                  userRole === role
-                    ? getBadgeStyle(role)
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
+          {/* Alternador de Plano para Teste/Demonstração */}
+          {isAuthenticated && user && (
+            <div className="hidden sm:flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1 rounded-xl text-xs">
+              <span className="text-[10px] text-slate-400 pl-2 font-medium">Plano:</span>
+              {(['FREE', 'PLUS', 'MASTER'] as Role[]).map((role) => (
+                <button
+                  key={role}
+                  onClick={() => handleRoleChange(role)}
+                  className={`px-2 py-0.5 rounded-lg transition text-[11px] font-bold ${
+                    user.role === role
+                      ? getBadgeStyle(role)
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* User Badge */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-            <div className="h-9 w-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200">
-              <UserIcon className="h-5 w-5" />
+          {/* User Profile ou Botão de Login */}
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-3 pl-2 border-l border-slate-800">
+              <div className="relative h-9 w-9 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200">
+                {user.avatarUrl ? (
+                  <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
+                ) : (
+                  <UserIcon className="h-4 w-4" />
+                )}
+              </div>
+              <div className="hidden lg:block text-left text-xs">
+                <span className="font-semibold text-white block">{user.name}</span>
+                <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] uppercase font-bold mt-0.5 ${getBadgeStyle(user.role)}`}>
+                  {user.role === 'MASTER' ? 'Leitor Master' : user.role === 'PLUS' ? 'Leitor Plus' : 'Plano Free'}
+                </span>
+              </div>
+
+              <button
+                onClick={() => {
+                  logout();
+                  toast('Sessão encerrada', 'Você saiu da sua conta.', 'info');
+                }}
+                title="Sair da conta"
+                className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800/80 transition"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
-            <div className="hidden lg:block text-left text-xs">
-              <span className="font-semibold text-white block">Alexandre</span>
-              <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] uppercase mt-0.5 ${getBadgeStyle(userRole)}`}>
-                {userRole === 'MASTER' ? 'Leitor Master' : userRole === 'PLUS' ? 'Leitor Plus' : 'Plano Free'}
-              </span>
-            </div>
-          </div>
+          ) : (
+            <button
+              onClick={openAuthModal}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition shadow-md shadow-amber-900/30"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span>Entrar / Cadastrar</span>
+            </button>
+          )}
 
         </div>
 
