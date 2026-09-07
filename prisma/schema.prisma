@@ -1,0 +1,191 @@
+// Prisma Schema para Meu Clube do Livro (Supabase PostgreSQL / SQLite fallback)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  FREE
+  PLUS
+  MASTER
+}
+
+enum ShelfTheme {
+  WOOD
+  DARK
+  NEON
+  VINTAGE
+}
+
+enum BookType {
+  BOOK
+  MANGA
+  COMIC
+}
+
+enum ReadingStatus {
+  WANT_TO_READ
+  READING
+  READ
+  ABANDONED
+}
+
+enum MemberRole {
+  MEMBER
+  MODERATOR
+  MASTER
+}
+
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  name            String?
+  avatarUrl       String?
+  bio             String?
+  role            Role           @default(FREE)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relacionamentos
+  shelves         Shelf[]
+  managedClubs    Club[]         @relation("ClubMaster")
+  clubMemberships ClubMember[]
+  discussions     Discussion[]
+  reviews         Review[]
+
+  @@map("users")
+}
+
+model Shelf {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  theme       ShelfTheme  @default(WOOD)
+  isPublic    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clubId      String?
+  club        Club?       @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  books       ShelfBook[]
+
+  @@map("shelves")
+}
+
+model Book {
+  id                String      @id @default(cuid())
+  externalId        String?     // ID do Google Books ou Jikan
+  title             String
+  authors           String      // Nomes de autores separados por vírgula
+  coverUrl          String?
+  synopsis          String?
+  pageCount         Int         @default(0)
+  publishedYear     Int?
+  type              BookType    @default(BOOK)
+  isbn              String?
+  createdAt         DateTime    @default(now())
+
+  shelfBooks        ShelfBook[]
+  clubCurrentBooks  Club[]      @relation("CurrentBook")
+  reviews           Review[]
+
+  @@map("books")
+}
+
+model ShelfBook {
+  id          String        @id @default(cuid())
+  shelfId     String
+  shelf       Shelf         @relation(fields: [shelfId], references: [id], onDelete: Cascade)
+
+  bookId      String
+  book        Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  status      ReadingStatus @default(WANT_TO_READ)
+  currentPage Int           @default(0)
+  rating      Int?          // 1 a 5 estrelas
+  notes       String?
+  addedAt     DateTime      @default(now())
+
+  @@unique([shelfId, bookId])
+  @@map("shelf_books")
+}
+
+model Club {
+  id              String        @id @default(cuid())
+  name            String
+  description     String?
+  bannerUrl       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  masterId        String
+  master          User          @relation("ClubMaster", fields: [masterId], references: [id])
+
+  currentBookId   String?
+  currentBook     Book?         @relation("CurrentBook", fields: [currentBookId], references: [id])
+  readingDeadline DateTime?
+
+  shelves         Shelf[]
+  members         ClubMember[]
+  discussions     Discussion[]
+
+  @@map("clubs")
+}
+
+model ClubMember {
+  id        String     @id @default(cuid())
+  clubId    String
+  club      Club       @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role      MemberRole @default(MEMBER)
+  joinedAt  DateTime   @default(now())
+
+  @@unique([clubId, userId])
+  @@map("club_members")
+}
+
+model Discussion {
+  id           String   @id @default(cuid())
+  clubId       String
+  club         Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  title        String
+  content      String
+  chapterLimit String?  // Ex: "Capítulos 1-5"
+  isSpoiler    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("discussions")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rating    Int      // 1 a 5
+  content   String
+  createdAt DateTime @default(now())
+
+  @@map("reviews")
+}
